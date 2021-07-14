@@ -1,0 +1,3 @@
+[submodule "FLEPSeq"]
+	path = FLEPSeq
+	url = https://github.com/ZhaiLab-SUSTech/FLEPSeq.git
