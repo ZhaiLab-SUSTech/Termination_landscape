@@ -1,6 +1,6 @@
 <!--
  * @Date         : 2021-07-14 15:30:56
- * @LastEditTime : 2021-07-14 15:49:52
+ * @LastEditTime : 2021-07-14 15:52:10
  * @LastEditors  : windz
  * @FilePath     : /README.md
 -->
@@ -11,7 +11,7 @@ Landscape of Transcription Termination in Arabidopsis Revealed by Single-molecul
 
 ## Pipeline
 
-- The pipeline developed for processing FLEP-seq data is available at [FLEPSeq](./FLEPSeq)
+- The pipeline developed for processing FLEP-seq data is available at [FLEPSeq](https://github.com/ZhaiLab-SUSTech/FLEPSeq)
 - All scripts used for termination landscape analysis in this study is avaliable at [termination_landscape_pipeline](./termination_landscape_pipeline). The pipeline should be run with `snakemake`.
 
 ## Data availability
