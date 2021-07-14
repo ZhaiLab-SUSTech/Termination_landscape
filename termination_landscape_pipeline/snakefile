@@ -1,0 +1,108 @@
+'''
+Date         : 2021-04-13 20:03:59
+LastEditTime : 2021-04-19 13:54:51
+LastEditors  : windz
+FilePath     : /public/home/mowp/test/20210326_xrn2_test/snakefile
+'''
+
+'''
+A pipline for nanopore cdna
+You can run like this:
+snakemake -j 6 -c "qsub -N {rulename} -l nodes=1:ppn={threads} -l mem=32g -j oe -l walltime=900:00:00"
+'''
+
+import os
+import glob
+
+configfile: 'config.yml'
+
+
+# create log dir
+if not os.path.exists('log'):
+    os.mkdir('log')
+
+
+SAMPLE_NAME = config['sample_name']
+
+rule all:
+    input:
+        expand('aligned_data/{sample_name}.sorted.bam', sample_name=SAMPLE_NAME),
+        expand('elongating_data/{sample_name}.elongating.bam', sample_name=SAMPLE_NAME),
+        expand('polyadenylated_data/{sample_name}.polyadenylated.bam', sample_name=SAMPLE_NAME),
+        expand('stringtie/{sample_name}.gene_abund.tsv', sample_name=SAMPLE_NAME)
+
+
+
+rule run_minimap2:
+    input:
+        reads='basecalled_data/{sample_name}.fastq.gz',
+    output:
+        bam='aligned_data/{sample_name}.sorted.bam',
+        bai='aligned_data/{sample_name}.sorted.bam.bai'
+    threads: 60
+    params:
+        ref=config['genome'],
+    shell:
+        '''
+minimap2 -t {threads} -ax splice -G 12000 --secondary=no {params.ref} {input.reads} | samtools view -@ {threads} -F 2308 -hb - | samtools sort -@ {threads} -O bam -o {output.bam} -
+samtools index -@ {threads} {output.bam}
+        '''
+
+
+rule add_tags_to_bam:
+    input:
+        infile='aligned_data/{sample_name}.sorted.bam',
+        read_info='results/{sample_name}.read_info.result.txt',
+        adapter_info='results/{sample_name}.adapter.result.txt',
+        polya_info='results/{sample_name}.polyA_tail.result.txt'
+    output:
+        bam='aligned_data/{sample_name}.sorted.tagged.bam',
+        bai='aligned_data/{sample_name}.sorted.tagged.bam.bai'
+    threads: 1
+    shell:
+        '''
+python script/add_tag_to_bam.py -i {input.infile} --read_info {input.read_info} --adapter_info {input.adapter_info} --polya_info {input.polya_info} -o {output.bam}
+        '''
+
+
+rule get_elongating_reads:
+    input:
+        'aligned_data/{sample_name}.sorted.tagged.bam'
+    output:
+        bam='elongating_data/{sample_name}.elongating.bam',
+        bai='elongating_data/{sample_name}.elongating.bam.bai'
+    threads: 1
+    shell:
+        '''
+python script/get_elongating_reads.py -i {input} -o {output.bam}
+samtools index -@10 {output.bam}
+        '''
+
+
+rule get_polyadenylated_reads:
+    input:
+        'aligned_data/{sample_name}.sorted.tagged.bam'
+    output:
+        bam='polyadenylated_data/{sample_name}.polyadenylated.bam',
+        bai='polyadenylated_data/{sample_name}.polyadenylated.bam.bai'
+    threads: 1
+    shell:
+        '''
+python script/get_polyadenylated_reads.py -i {input} -o {output.bam}
+samtools index -@10 {output.bam}
+        '''
+
+
+rule run_stringtie:
+    input:
+        'aligned_data/{sample_name}.sorted.tagged.bam'
+    output:
+        gene_abund='stringtie/{sample_name}.gene_abund.tsv',
+        gtf='stringtie/{sample_name}.gtf'
+    threads: 32
+    params:
+        '/public/home/mowp/db/Arabidopsis_thaliana/gff3/Araport11_GFF3_genes_transposons.201606.gff'
+    shell:
+        '''
+stringtie -A {output.gene_abund} -L -e --rf -B -p {threads} -G {params} -o {output.gtf} {input}
+        '''
