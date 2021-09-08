@@ -2,8 +2,13 @@
 # coding=utf-8
 '''
 Date         : 2021-04-19 09:45:44
+<<<<<<< HEAD
 LastEditTime : 2021-09-08 20:20:58
 LastEditors  : windz
+=======
+LastEditTime: 2021-09-08 20:14:29
+LastEditors: Please set LastEditors
+>>>>>>> 77af7b2557410e1103bb689c7e5598f53095bb17
 FilePath     : /public/home/mowp/test/nanopore_test/20210326_xrn2_test/script/add_tag_to_bam.py
 '''
 
