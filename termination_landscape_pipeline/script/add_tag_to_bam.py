@@ -2,7 +2,7 @@
 # coding=utf-8
 '''
 Date         : 2021-04-19 09:45:44
-LastEditTime : 2021-09-08 20:25:04
+LastEditTime : 2021-09-08 20:26:49
 LastEditors  : windz
 FilePath     : /public/home/mowp/test/nanopore_test/20210326_xrn2_test/script/add_tag_to_bam.py
 '''
