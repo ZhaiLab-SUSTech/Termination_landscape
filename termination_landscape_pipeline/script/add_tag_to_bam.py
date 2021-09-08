@@ -2,7 +2,7 @@
 # coding=utf-8
 '''
 Date         : 2021-04-19 09:45:44
-LastEditTime : 2021-04-19 15:27:09
+LastEditTime : 2021-09-08 20:20:58
 LastEditors  : windz
 FilePath     : /public/home/mowp/test/nanopore_test/20210326_xrn2_test/script/add_tag_to_bam.py
 '''
@@ -176,7 +176,7 @@ def main(infile, outfile, read_info, adapter_info, polya_info, threads):
                 continue
             
             # adjust read strand
-            if polyA_type is 'T':
+            if polyA_type == 'T':
                 if read.is_reverse:
                     read.flag += -16
                 else:
