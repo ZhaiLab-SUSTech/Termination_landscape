@@ -1,0 +1,113 @@
+'''
+Date         : 2021-08-24 15:55:43
+LastEditTime : 2021-08-24 21:05:06
+LastEditors  : windz
+'''
+
+
+import os
+from glob import glob
+
+
+# create log dir
+if not os.path.exists('log'):
+    os.mkdir('log')
+
+
+configfile: 'config.yml'
+SAMPLE_NAME = [os.path.basename(fn).split('.fastq')[0] for fn in glob('raw_data/*.gz')]
+meth_type = ['cg','chg','chh']
+
+rule all:
+    input:
+        expand('aligned_data/{sample_name}.bam', sample_name=SAMPLE_NAME),
+        expand('methratio/{sample_name}_methratio.txt.gz', sample_name=SAMPLE_NAME),
+        expand('bw_files/{sample_name}.methratio.cg.bw', sample_name=SAMPLE_NAME),
+        # expand('deeptools_profile/{sample_name}.methratio.{meth_type}.scale.png', sample_name=SAMPLE_NAME, meth_type=meth_type),
+
+
+# for single end
+rule run_bsmapz:
+    input:
+        fq1='raw_data/{sample_name}.fastq.gz'
+    output:
+        'aligned_data/{sample_name}.bam',
+    params:
+        genome=config['tair10_genome'],
+        mismatch=0.08,
+        base_quality=33,  # quality coding format
+        gap_size=0,
+        best_hits_num=1,
+        report_repeat=0,
+        lib_type=0  # #-n 0 对应Lister建库方式（比对到两条正链，notags）；-n 1 对应Cokus建库方式（比对到所有的四种链，tags）
+    threads: 32
+    shell:
+        '''
+export PATH=/public/home/mowp/anaconda3/envs/py2/bin/:$PATH
+export PATH=/public/home/mowp/softwares/bsmapz/bin/:$PATH
+
+bsmapz -a {input.fq1} -d {params.genome} -p {threads} -v {params.mismatch} -z {params.base_quality} -n {params.lib_type} -u -g {params.gap_size} -w {params.best_hits_num} -r {params.report_repeat} -o {output}
+
+'''
+
+
+# 从bam文件中提取甲基化信息
+rule extract_methratio:
+    input:
+        'aligned_data/{sample_name}.bam',
+    output:
+        out1=temp("methratio/{sample_name}_methratio.txt"),
+        out2=temp("methratio/{sample_name}_wiggle.txt"),
+        out3="methratio/{sample_name}_methratio.txt.gz",
+        out4="methratio/{sample_name}_wiggle.txt.gz"
+    params:
+        genome=config['tair10_genome'],
+        wig_bin=1,
+        min_depth=1
+    threads: 32
+    shell:
+        '''
+export PATH=/public/home/mowp/anaconda3/envs/py2/bin/:$PATH
+export PATH=/public/home/mowp/softwares/bsmapz/bin/:$PATH
+
+methratio.py -o {output.out1} -d {params.genome} --wig {output.out2} --wig-bin {params.wig_bin} -u -z -r -m {params.min_depth} {input} -N {threads} 
+
+pigz -p 10 -c {output.out1} > {output.out3}
+pigz -p 10 -c {output.out2} > {output.out4}
+        '''
+
+
+# 对methratio.py的输出文件进行过滤，去掉CT_count=0的位点，分为CG,CHG和CHH进行保存
+rule get_bedgraph:
+    input: 
+        'methratio/{sample_name}_methratio.txt.gz',
+    output:
+        'bdg_files/{sample_name}.methratio.cg.bdg',
+        'bdg_files/{sample_name}.methratio.chg.bdg',
+        'bdg_files/{sample_name}.methratio.chh.bdg'
+    params:
+        output_path='bdg_files'
+    shell:
+        '''
+python script/get_bedgraph.py -i {input} -o {params.output_path}
+        '''
+
+
+# 将bedGraph文件转化成bigwig文件
+rule convert_bdg_to_bw:
+    input: 
+        cg='bdg_files/{sample_name}.methratio.cg.bdg',
+        chg='bdg_files/{sample_name}.methratio.chg.bdg',
+        chh='bdg_files/{sample_name}.methratio.chh.bdg'
+    output:
+        cg='bw_files/{sample_name}.methratio.cg.bw',
+        chg='bw_files/{sample_name}.methratio.chg.bw',
+        chh='bw_files/{sample_name}.methratio.chh.bw'
+    params:
+        chrom_size='/public/home/mowp/db/Arabidopsis_thaliana/dna/Arabidopsis_thaliana.TAIR10.chrom.sizes'
+    shell:
+        '''
+bedGraphToBigWig {input.cg} ~/db/Arabidopsis_thaliana/dna/Arabidopsis_thaliana.TAIR10.chrom.sizes {output.cg}
+bedGraphToBigWig {input.chh} ~/db/Arabidopsis_thaliana/dna/Arabidopsis_thaliana.TAIR10.chrom.sizes {output.chh}
+bedGraphToBigWig {input.chg} ~/db/Arabidopsis_thaliana/dna/Arabidopsis_thaliana.TAIR10.chrom.sizes {output.chg}
+        '''
