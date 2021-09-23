@@ -1,6 +1,6 @@
 <!--
  * @Date         : 2021-07-14 15:30:56
- * @LastEditTime : 2021-09-10 14:45:57
+ * @LastEditTime : 2021-09-23 11:24:44
  * @LastEditors  : windz
  * @FilePath     : /public_repository/README.md
 -->
@@ -16,6 +16,6 @@ This repository includes all bioinformatics analysis codes used in the manuscrip
 
 ## Data availability
 
-The accession numbers for the FLEP-seq sequencing data presented in this paper are NCBI’s Sequence Read Archive (SRA): PRJNA591665 and Gene Expression Omnibus (GEO): GSE178980.
+The accession numbers for the FLEP-seq sequencing data presented in this paper are NCBI’s Sequence Read Archive (SRA): PRJNA591665 and [Genome Sequence Archive in National Genomics Data Center](https://ngdc.cncb.ac.cn/gsa/): CRA005016 and CRA005017.
 
 The FLEP-seq data are also displayed in a [JBrowse](https://zhailab-sustech.github.io/jbrowse2/).
