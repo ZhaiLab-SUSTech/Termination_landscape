@@ -1,6 +1,6 @@
 '''
 Date         : 2021-04-13 20:03:59
-LastEditTime : 2021-07-14 15:41:24
+LastEditTime : 2021-09-23 20:00:18
 LastEditors  : windz
 '''
 
@@ -104,4 +104,20 @@ rule run_stringtie:
     shell:
         '''
 stringtie -A {output.gene_abund} -L -e --rf -B -p {threads} -G {params} -o {output.gtf} {input}
+        '''
+
+
+rule get_polya_cluster:
+    input:
+        bam='polyadenylated_data/{sample_name}.polyadenylated.bam',
+    output:
+        'polya_sites/{sample_name}.polya_cluster.bed',
+        'polya_sites/{sample_name}.polya_cluster.summit.bed',
+    params:
+        suffix='polya_sites/{sample_name}',
+        gene_bed='/public/home/mowp/db/Arabidopsis_thaliana/isoform/araport11.gene.bed'
+    threads: 32
+    shell:
+        '''
+python script/get_polya_cluster.py --infile {input.bam} --gene_bed {params.gene_bed} --out_suffix {params.suffix} -t {threads}
         '''
